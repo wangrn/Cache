@@ -13,13 +13,15 @@ public:
     int isn;
 };
 
-int main(int argc, char* argv[]) {
+
+int main(int argc, char* argv[])
+{
     thread_pool* tp = new thread_pool();
     tp->start(10);
     for (int i = 0; i < 100; ++i) {
-        thread_runner_test* trt = new thread_runner_test;
-  trt->isn = i;
-        tp->add_task(trt);
+    	thread_runner_test* trt = new thread_runner_test;
+    	trt->isn = i;
+    	tp->add_task(trt);
     }
 
     int recv_count = 0;
