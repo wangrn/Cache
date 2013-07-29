@@ -472,94 +472,97 @@ public:
     }
 };
 
-class cmd_thread : public worker_thread {
+
+class cmd_thread : public worker_thread
+{
 public:
     main_thread* mt;
     int cmd_ltn_sock;
-    cmd_thread() {
-        mt = 0;
-    cmd_ltn_sock = -1;
+    
+    cmd_thread()
+    {
+    	mt = 0;
+    	cmd_ltn_sock = -1;
     }
 
-    virtual void run() {
-        i_am_stoped = false; 
-        while (!is_stop()) {            
-            struct sockaddr_in client_addr;
+    virtual void run()
+    {
+    	i_am_stoped = false;
+    	while (!is_stop())
+    	{
+    		struct sockaddr_in client_addr;
             socklen_t al = sizeof(client_addr);
             int client_sock;
-
-	    while (1) {
-	        client_sock = accept(cmd_ltn_sock,  (struct sockaddr* )&client_addr, &al);
-	        if (client_sock <= 0) {
-		    if (errno == EINTR)
-		        continue;
-	            else if (errno == EAGAIN || errno == EWOULDBLOCK)
-		        break;
-		    else {
-		        printf("[ERROR] cmd thread accept failed! errno:%d emsg:%s\n", errno, strerror(errno));
-			_exit(1);
-		    }
-	        } else {
-	            //process the
-		    unsigned bytes = 0;
-		    int ret = assure_read_package_length_msgpeek(client_sock, bytes, 100);
-		    if (ret < 0) {
-		        printf("[%05d] [ERROR] failed when get package length! ret:%d errno:%d\n", client_sock, ret, errno);
-			break;
-		    }
-
-		    printf("[%05d] [INFO] package length:%u\n", client_sock, bytes);
-
-		    char* buf = (char*)malloc(bytes);
-		    ret = assure_read_package(client_sock, bytes, buf, 100);
-		    if (ret < 0) {
-		        free(buf);
-		        printf("[%05d] [ERROR] failed when get package! ret:%d errno:%d\n", client_sock, ret, errno);
-			break;
-		    }
-
-
-		    request_header* rh = (request_header*)buf;
-
-		    printf("[%05d] [INFO] bytes:%u cmd:%d\n", client_sock, rh->length, rh->cmd);
-
-		    switch(rh->cmd) {
-		    case CMD_CACHE_UPDATE_STATE_UPDATING: {
-		        mt->update_to_can_write(true);
-			response(client_sock, rh->cmd, 0);
-		    } break;
-		    case CMD_CACHE_UPDATE_STATE_APPENDING: {
-		        mt->update_to_can_write(false);
-			response(client_sock, rh->cmd, 0);
-		    } break;
-		    case CMD_CACHE_UPDATE_STATE_ESTABLISHED: {
-		        mt->update_to_can_read();
-			response(client_sock, rh->cmd, 0);
-		    } break;
-		    case CMD_CACHE_GET_STATUS: {
-		        if (mt->is_state_can_read()) {
-			    //unsigned user_cnt = mt->ptr_list.size();
-			    unsigned key_cnt = mt->key_count();
-			    unsigned max_simultaneous_read = mt->max_simultaneous_read;
-			    unsigned max_simultaneous_write = mt->max_simultaneous_write;
-			    unsigned buf[10];
-			    buf[0] = key_cnt;
-			    buf[1] = max_simultaneous_read;
-			    buf[2] = max_simultaneous_write;
-			    //response(client_sock, rh->cmd, 0, (void*)&user_cnt, (unsigned)sizeof(user_cnt));
-			    response(client_sock, rh->cmd, 0, (void*)buf, sizeof(unsigned)*3);
-			} else {
-			    response(client_sock, rh->cmd, ERR_FORBID_BY_CUR_STATE);
-			}
-		    } break;
-		    default: {
-		        response(client_sock, rh->cmd, ERR_UNKNOWN_CMD);
-		    } break;
-		    }
-
-		    free(buf);
-	        }
-	    }
+            
+            while (1)
+            {
+                client_sock = accept(cmd_ltn_sock,  (struct sockaddr* )&client_addr, &al);
+                if (client_sock <= 0)
+                {
+                    if (errno == EINTR) continue;
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+                    printf("[ERROR] cmd thread accept failed! errno:%d emsg:%s\n", errno, strerror(errno));
+                    _exit(1);
+                }
+                
+                //process the
+                unsigned bytes = 0;
+                int ret = assure_read_package_length_msgpeek(client_sock, bytes, 100);
+                if (ret < 0)
+                {
+                    printf("[%05d] [ERROR] failed when get package length! ret:%d errno:%d\n", client_sock, ret, errno);
+                    break;
+                }
+                printf("[%05d] [INFO] package length:%u\n", client_sock, bytes);
+                
+                char* buf = (char*)malloc(bytes);
+                ret = assure_read_package(client_sock, bytes, buf, 100);
+                if (ret < 0)
+                {
+                    free(buf);
+                    printf("[%05d] [ERROR] failed when get package! ret:%d errno:%d\n", client_sock, ret, errno);
+                    break;
+                }
+                
+                request_header* rh = (request_header*)buf;
+                printf("[%05d] [INFO] bytes:%u cmd:%d\n", client_sock, rh->length, rh->cmd);
+                switch(rh->cmd)
+                {
+                case CMD_CACHE_UPDATE_STATE_UPDATING: 
+                    mt->update_to_can_write(true);
+                    response(client_sock, rh->cmd, 0);
+                    break;
+                case CMD_CACHE_UPDATE_STATE_APPENDING:
+                    mt->update_to_can_write(false);
+                    response(client_sock, rh->cmd, 0);
+                    break;
+                case CMD_CACHE_UPDATE_STATE_ESTABLISHED:
+                    mt->update_to_can_read();
+                    response(client_sock, rh->cmd, 0);
+                    break;
+                case CMD_CACHE_GET_STATUS:
+                    if (mt->is_state_can_read())
+                    {
+                        unsigned key_cnt = mt->key_count();
+                        unsigned max_simultaneous_read = mt->max_simultaneous_read;
+                        unsigned max_simultaneous_write = mt->max_simultaneous_write;
+                        unsigned buf[10];
+                        buf[0] = key_cnt;
+                        buf[1] = max_simultaneous_read;
+                        buf[2] = max_simultaneous_write;
+                        response(client_sock, rh->cmd, 0, (void*)buf, sizeof(unsigned)*3);
+                    } 
+                    else
+                    {
+                        response(client_sock, rh->cmd, ERR_FORBID_BY_CUR_STATE);
+                    }
+                    break;
+                default:
+                    response(client_sock, rh->cmd, ERR_UNKNOWN_CMD);
+                    break;
+                }
+                free(buf);
+            }
             usleep(1000);
         }
         i_am_stoped = true;
@@ -567,39 +570,41 @@ public:
 };
 
 
-void main_thread::init() {
+void main_thread::init()
+{
     int ret = 0; 
-    //ui.init();
     ht.init(65536, 16384, 30020, 30011);
 
     unsigned short cmd_port = 0;
     unsigned short data_port = 0;
 
-        cmd_port = 9527;
+    cmd_port = 9528;
     data_port = 9527;
 
-    printf("cmdport=%d,dataport=%d\n", cmd_port, data_port);
+    printf("cmdport=%d, dataport=%d\n", cmd_port, data_port);
 
     cmd_thread* ct = new cmd_thread;
-
     ret = create_tcp_server("127.0.0.1", cmd_port);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         printf("create cmd socket failed! errno:%d emsg:%s\n", errno, strerror(errno));
         _exit(1);
     }
     ct->cmd_ltn_sock = ret;
 
     ret = create_tcp_server("127.0.0.1", data_port);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         printf("create data socket failed! errno:%d emsg:%s\n", errno, strerror(errno));
         _exit(1);
     }
     data_ltn_sock = ret;
 
     ct->mt = this;
-    for (int i = 0; i < thread_count; ++i) {
+    for (int i = 0; i < thread_count; ++i)
+    {
         data_thread* dt = new data_thread;
-	dt->mt = this;
+        dt->mt = this;
         worker_thread* wt = dt;
         wtl.push_back(wt);
     }
@@ -611,75 +616,12 @@ void main_thread::init() {
     assure_start_worker_thread(wtl);
 }
 
-/*
-void main_thread::rebuild_index() {
-    clear_the_whole_blocks();
-
-    for (unsigned i = 0; i < wtl.size(); ++i) {
-        data_thread* dt = (data_thread*)wtl[i];
-	for (unsigned j = 0; j < dt->bl.size(); ++j) {
-	    block b = dt->bl[j];
-	    bl.push_back(b);
-	    list_iterator li((unsigned*)b.frd,b.offset/sizeof(unsigned));
-            unsigned uin;
-	    unsigned len;
-	    unsigned * data = li.next(uin, len);
-	    while (data) {
-	        //printf("uin:%u len:%u\n", uin, len);
-		//ptr_list.push_back(data-2);
-		//ui.add_just_add(uin, ptr_list.size()-1);
-	        data = li.next(uin, len);
-	    }
-	}
-	dt->bl.clear();
-    }
-
-    timeval s,e;
-    gettimeofday(&s,NULL);
-    update_the_sort_of_ui();
-    gettimeofday(&e,NULL);
-    printf("update_the_sort_of_ui, elapse:%dms\n", e.tv_sec*1000+e.tv_usec/1000-(s.tv_sec*1000+s.tv_usec/1000));
-    //ui.dump();
-}
-*/
-
-bool operator < (const uin_index::term& l, const uin_index::term& r) {
-    return (l.uin > r.uin);
-}
-/*
-void main_thread::update_the_sort_of_ui() {
-    
-    wb::min_heap<uin_index::term> mh;
-    for (unsigned i = 0; i < ui.t.size(); ++i) {
-        vector<uin_index::term>& range = ui.t[i];
-	if (range.size() == 0)
-	    continue;
-
-	mh.init(range.size());
-
-	for (unsigned k = 0; k < range.size(); ++k) {
-	    mh.add_element(range[k]);
-	}
-
-	mh.sort();
-
-	uin_index::term* ary = mh.array();
-	assert(mh.size() == range.size());
-	for (unsigned k = 0; k < mh.size(); ++k) {
-	    range[k] = ary[k];
-	}
-
-	mh.free();
-    }
-}
-*/
-
-
 void main_thread::get_pending_blocks()
 {
-    for (unsigned i = 0; i < wtl.size(); ++i) {
+    for (unsigned i = 0; i < wtl.size(); ++i)
+    {
         data_thread* dt = (data_thread*)wtl[i];
-	dt->main_get_data(waiting_bl);
+        dt->main_get_data(waiting_bl);
     }
 }
 
@@ -691,13 +633,12 @@ void main_thread::process_one_block(block& b)
     unsigned len;
 
     unsigned char* frd = li.next(uin, bytes);
-    while (frd) {
+    while (frd)
+    {
         void* data = (frd-2*sizeof(unsigned));
-
-	add_user(uin, bytes+2*sizeof(unsigned), (char*)data);
-
+        add_user(uin, bytes+2*sizeof(unsigned), (char*)data);
         //printf("add user uin:%u bytes:%u frd:%u\n", uin, bytes, bytes/sizeof(unsigned));
-	frd = li.next(uin, bytes);
+        frd = li.next(uin, bytes);
     }
 }
 
@@ -705,7 +646,8 @@ void main_thread::read_block()
 {
     get_pending_blocks();
 	
-    if (waiting_bl.size()) {
+    if (waiting_bl.size())
+    {
         vector<block>::iterator lastone = waiting_bl.begin()+(waiting_bl.size()-1);
         process_one_block(*lastone);
         lastone->free_memory();
@@ -713,28 +655,28 @@ void main_thread::read_block()
     }
 }
 
-void main_thread::run() {
+void main_thread::run()
+{
     init();
    
     printf("main_thread::run\n");
-    while (1) {
+    while (1)
+    {
         mt_lock.lock();
-
-	if (!is_state_can_read()) {
-	    read_block();
-	    if (waiting_bl.size() > 0) {
-	        mt_lock.unlock();
-	        continue;
-	    }
-	}
-
-	mt_lock.unlock();
-
+        
+        if (!is_state_can_read())
+        {
+            read_block();
+            if (waiting_bl.size() > 0)
+            {
+                mt_lock.unlock();
+                continue;
+            }
+        }
+        mt_lock.unlock();
         usleep(1000);
     }
 }
-
-
 
 
 int mt_cache_run(int port, int thread_count)
