@@ -5,7 +5,7 @@
 
 #include "net.h"
 #include "thread.h"
-#include "common.h"
+#include "list_iterator.h"
 #include "protocol.h"
 #include "uin_index.h"
 #include "min_heap.h"
