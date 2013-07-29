@@ -67,11 +67,7 @@ void* thread_entrance(void *arg);
 class thread_base
 {
 public:
-    thread_base()
-    {
-        stop = false;
-        i_am_stoped = true;
-    }
+    thread_base():stop(false),i_am_stopped(true) {}
     virtual ~thread_base() {}
     
     void start() {}
@@ -104,7 +100,7 @@ public:
 
     volatile bool running;
 
-    worker_thread() { running = false; }   
+    worker_thread():running(false) { }   
         
     bool is_running() { return running; }       
     void set_running() { running = true; }       
@@ -120,10 +116,8 @@ class master_thread : public thread_base
 {
 public:
     virtual void run() ; 
-    master_thread()
-    {
-        worker_count = 10;
-    }
+    master_thread():worker_count(10) {}
+
     int worker_count;
 
     vector<worker_thread*> wt_set;
