@@ -19,6 +19,8 @@ using namespace std;
 
 int set_nonblock(int fd);
 int set_sndbuf_size(int sock, int size);
+int set_reuse(int sock, int reuse);
+int set_sock_linger(int sock, struct linger ling);
 
 int create_tcp_server(const char * ip, unsigned short port);
 int create_tcp_client(const char* ip, unsigned short port);
