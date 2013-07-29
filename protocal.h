@@ -60,4 +60,33 @@ public:
     }
 };
 
+class response_header
+{
+public:
+    unsigned int length;
+	int err;
+	int cmd;
+
+	bool encode(char* buf, unsigned size, unsigned& offset) {
+		if (offset+sizeof(response_header) > size)
+			return false;
+		response_header* rh = (response_header*)(buf+offset);
+		rh->length = length;
+        rh->err = err;
+		rh->cmd = cmd;
+		offset += sizeof(response_header);
+		return true;
+	}
+	bool decode(char* buf, unsigned size, unsigned& offset) {
+		if (offset+sizeof(response_header) > size)
+			return false;
+
+		response_header* rh = (response_header*)(buf+offset);
+		length = rh->length;
+        err = rh->err;
+		cmd = rh->cmd;
+		offset += sizeof(response_header);
+		return true;
+	}
+};
 #endif
