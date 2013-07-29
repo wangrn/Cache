@@ -234,7 +234,43 @@ public:
 #define HASH_TABLE_FIRST_MOD 1997
 class hash_table
 {
+public:
+    hash_table()
+    {
+        ht.resize(HASH_TABLE_FIRST_MOD);
+    }
+    void init(unsigned int size, unsigned int _second_pool_size, unsigned int _table_size, unsigned int _mf)
+    {
+        for (unsinged int i = 0; i < ht.size(); i ++)
+        {
+            ht[i].finit();
+            ht[i].init(size, _second_pool_size, _table_size, _mf);
+        }
+    }
     
+    inline hash::knot* insert(unsigned int key, void* arg, bool &exist)
+    {
+        return ht[key%HASH_TABLE_FIRST_MOD].insert(key, arg, exist);
+    }
+    inline hash::knot* find(unsigned int key)
+    {
+        return ht[key%HASH_TABLE_FIRST_MOD].find(key);
+    }
+    
+    void clear()
+    {
+        for (int i = 0; i < ht.size(); i ++)
+            ht[i].clear();
+    }
+    unsigned int keycount()
+    {
+        unsigned int ret = 0;
+        for (int i = 0; i < ht.size(); i ++)
+            ret += ht[i].key_count;
+        return ret;
+    }
+    
+    vector<hash> ht;
 };
 
 #endif
