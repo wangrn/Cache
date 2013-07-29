@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-//#include <ev.h>
 #include <vector>
 #include <queue>
 #include <algorithm>
@@ -45,18 +44,18 @@ public:
     }
 
     void recapacity(int nc) {
-  if (nc <= cap) return;
+        if (nc <= cap) return;
         if (cap == 0) cap = 1;
         while (nc > cap) { cap <<= 1; }
-	a = (T*)realloc(a,cap*sizeof(T));
+        a = (T*)realloc(a,cap*sizeof(T));
     }
 
     void append(T* _a, unsigned len) {
         if (len+sz > cap) {
-	    recapacity(len+sz);   
-	}
+            recapacity(len+sz);
+        }
         memcpy(a+sz,_a,sizeof(T)*len);
-	sz += len;
+        sz += len;
     }
 
     void clear() {
@@ -65,8 +64,8 @@ public:
 
     void zero() {
         if (a) {
-	    memset(a,0,sizeof(T)*cap);
-	}
+            memset(a,0,sizeof(T)*cap);
+        }
     }
    
 private:
@@ -83,8 +82,10 @@ struct ev_timer_arg{
     //ev_timer body;
     void* arg;
 };
-class connection;
 
+
+
+class connection;
 class connection_manager
 {
 public:
@@ -100,25 +101,28 @@ public:
     queue<connection*> conns;
     
     virtual ~simple_connection_manager() {}
-    void add_connection(connection* c) {
+    void add_connection(connection* c)
+    {
         conns.push(c);
     }
-    virtual void collect_connection(connection* c) {
+    virtual void collect_connection(connection* c)
+    {
         conns.push(c);
     }
-    virtual connection* apply_connection() {
+    virtual connection* apply_connection()
+    {
         if (conns.size() == 0)
-	    return NULL;
-	else {
-	    connection* ret = conns.front();
-	    conns.pop();
-	    return ret;
-	}
+            return NULL;
+        connection* ret = conns.front();
+        conns.pop();
+        return ret;
     }
-    virtual int idle_connection_count() {
+    virtual int idle_connection_count()
+    {
         return conns.size();
     }
 };
+
 
 class connection
 {
@@ -133,30 +137,32 @@ public:
     struct ev_loop * loop;
     bool free_buff_after_send;
 
-    connection() {
+    connection()
+    {
         sock = -1;
-	last_errno = 0;
-	memset(&addr, 0 ,sizeof(addr));
-	rb.reserve(1024*1024*1);
-	rb.zero();
-	cm = NULL;
-	loop = NULL;
-	free_buff_after_send = true;
+        last_errno = 0;
+        memset(&addr, 0 ,sizeof(addr));
+        rb.reserve(1024*1024*1);
+        rb.zero();
+        cm = NULL;
+        loop = NULL;
+        free_buff_after_send = true;
     }
     
-    virtual void init(int _sock, float timeout, struct ev_loop* _loop, connection_manager* _cm) {
+    virtual void init(int _sock, float timeout, struct ev_loop* _loop, connection_manager* _cm)
+    {
         sock = _sock;
-	rb.clear();
-	loop = _loop;
-	cm = _cm;
-
-	//ev_io_init((ev_io*)&watcher, sockin_cb,  sock, EV_READ);
-	//ev_io_start(loop, (ev_io*)&watcher);
-	//watcher.arg = this;
-
-	//ev_timer_init((ev_timer*)&timer, timeout_cb, timeout, 0.);
-	//ev_timer_start(loop, (ev_timer*)&timer);
-	timer.arg = this;
+        rb.clear();
+        loop = _loop;
+        cm = _cm;
+        
+        //ev_io_init((ev_io*)&watcher, sockin_cb,  sock, EV_READ);
+        //ev_io_start(loop, (ev_io*)&watcher);
+        //watcher.arg = this;
+        
+        //ev_timer_init((ev_timer*)&timer, timeout_cb, timeout, 0.);
+        //ev_timer_start(loop, (ev_timer*)&timer);
+        timer.arg = this;
     }
 
     virtual void onevent(int e);
@@ -167,29 +173,34 @@ public:
 
     virtual int oncommand() { return 0 ;}
     virtual void response(int cmd, int err, unsigned char* data, unsigned len);
+    
 protected:
-    class send_state {
+    class send_state
+    {
     public:
         bool sending;
         bool send_head;
-	unsigned char* data;
-	unsigned send_cnt;
-	unsigned len;
-	int cmd;
-	int err;
-	unsigned char head_buff[sizeof(unsigned)*3];
-	send_state() {
-	    reset();
-	}
-	void reset() {
-	    sending = false;
-	    send_head = false;
-	    cmd = -1;
-	    data = 0;
-	    len = 0;
-	    send_cnt = 0;
-	    err = -1;
-	}
+        unsigned char* data;
+        unsigned send_cnt;
+        unsigned len;
+        int cmd;
+        int err;
+        unsigned char head_buff[sizeof(unsigned)*3];
+        
+        send_state()
+        {
+            reset();
+        }
+        void reset()
+        {
+            sending = false;
+            send_head = false;
+            cmd = -1;
+            data = 0;
+            len = 0;
+            send_cnt = 0;
+            err = -1;
+        }
     };
     send_state ss;
 };
@@ -199,14 +210,15 @@ class listen_connection : public connection
 public:
     virtual void onevent(int e);
 
-    virtual void init(int _sock, float timeout, struct ev_loop* _loop, connection_manager* _cm) {
+    virtual void init(int _sock, float timeout, struct ev_loop* _loop, connection_manager* _cm)
+    {
         sock = _sock;
-	rb.clear();
-	loop = _loop;
-	cm = _cm;
-	//ev_io_init((ev_io*)&watcher, sockin_cb,  sock, EV_READ);
-	//ev_io_start(loop, (ev_io*)&watcher);
-	watcher.arg = this;
+        rb.clear();
+        loop = _loop;
+        cm = _cm;
+        //ev_io_init((ev_io*)&watcher, sockin_cb,  sock, EV_READ);
+        //ev_io_start(loop, (ev_io*)&watcher);
+        watcher.arg = this;
     }
 };
 #endif
