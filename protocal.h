@@ -1,6 +1,11 @@
 #ifndef CACHE_PROTOCAL_H
 #define CACHE_PROTOCAL_H
 
+enum STATE
+{
+    CACHE_STATE_UPDATING = 0,
+    CACHE_STATE_ESTABLISHED,
+};
 
 enum Command
 {
