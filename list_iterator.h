@@ -11,20 +11,19 @@
 
 using namespace std;
 
-void read_line_to_uinlist(string& line, set<unsigned>& ul);
-void read_line_to_uinlist(string& line, tr1::unordered_set<unsigned>& ul);
-
 class list_iterator
 {
 public:
-    list_iterator(unsigned char* _d, unsigned _bytes):data(_d),bytes(_bytes) {
+    list_iterator(unsigned char* _d, unsigned _bytes):data(_d),bytes(_bytes)
+    {
         offset = 0;
     }
     unsigned char* data;
     unsigned offset;
     unsigned bytes;
 
-    unsigned char* next(unsigned& uin, unsigned& len) {
+    unsigned char* next(unsigned& uin, unsigned& len)
+    {
         uin = 0;
         len = 0;
 
