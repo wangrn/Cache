@@ -6,8 +6,32 @@
 #include <pthread.h>
 using namespace std;
 
+class ILock
+{
+public:
+    virtual ~ILock() {}
+    
+    virtual void lock() = 0;
+    virtual void unlock() = 0;
+};
 
-class mutex
+class LockGuard
+{
+public:
+    LockGuard(ILock *_lock)
+    {
+        m_lock = _lock;
+        m_lock->lock();
+    }
+    ~LockGuard()
+    {
+        m_lock->unlock();
+    }
+private:
+    ILock *m_lock;
+};
+
+class mutex : public ILock
 {
 public:
     pthread_mutex_t mtx;
@@ -20,17 +44,17 @@ public:
     {
         pthread_mutex_destroy($mtx);
     }
-    void lock()
+    virtual void lock()
     {
         pthread_mutex_lock(&mtx);
     }
-    void unlock()
+    virtual void unlock()
     {
         pthread_mutex_unlock(&mtx);
     }
 };
 
-class fast_lock
+class fast_lock : public ILock
 {
 public:
     fast_lock()
@@ -41,11 +65,11 @@ public:
     {
         pthread_spin_destroy(&spin);
     }
-    void lock()
+    virtual void lock()
     {
         pthread_spin_lock(&spin);
     }
-    void unlock()
+    virtual void unlock()
     {
         pthread_spin_unlock(&spin);
     }
